@@ -1,0 +1,31 @@
+service: ${env:API_NAME}-tag
+
+custom:
+  dotenv:
+    path: ./.env
+
+plugins:
+  - serverless-offline
+  - serverless-dotenv-plugin
+  - serverless-bundle
+
+provider:
+  name: aws
+  profile: ${env:AWS_PROFILE}
+  region: ${env:REGION}
+  runtime: nodejs12.x
+  timeout: 30
+  stage: ${env:NODE_ENV}
+  versionFunctions: false
+
+package:
+  individually: true
+
+functions:
+  getAll:
+    handler: handler.getAll
+    events:
+      - http:
+          path: geo
+          method: get
+          cors: true

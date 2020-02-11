@@ -1,0 +1,5 @@
+*.env
+! sample.env
+
+.serverless/
+node_modules/
