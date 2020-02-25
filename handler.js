@@ -5,7 +5,7 @@ const athenaExpressConfig = {
   aws,
   s3: "s3://cgp-metadata-search-dev",
   getStats: true,
-  formatJson: false
+  formatJson: true
 };
 
 const athenaExpress = new AthenaExpress(athenaExpressConfig);
