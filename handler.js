@@ -14,17 +14,28 @@ const athenaExpress = new AthenaExpress(athenaExpressConfig);
 export async function getAll(event) {
   // let Bbox =
   // '{type=Polygon, coordinates=[[["-127.737823","52.127108"],["-102.774389","52.127108"],["-102.774389","65.165894"],["-127.737823","65.165894"],["-127.737823","52.127108"]]]}';
+  let input = {
+    properties: {
+      title: {
+        en: "(?i).*Seismic.*",
+        fr: "(?i).*Eau.*"
+      }
+    }
+  };
+
+  let flatInput = input.entries();
+
   let myQuery = {
     sql:
-      "SELECT * FROM metadata where properties.id = '05870f11-a52a-4bf4-bc15-910fd0b8a1a3' limit 10",
+      "SELECT * FROM metadata WHERE regexp_like(properties.title.en,'(?i).*Seismic.*') limit 10;",
     db: "cgp-metadata-search-dev"
   };
 
   try {
-    let results = await athenaExpress.query(myQuery);
+    // let results = await athenaExpress.query(myQuery);
     return {
       statusCode: 200,
-      body: JSON.stringify(results)
+      body: JSON.stringify(flatInput)
     };
   } catch (err) {
     return {
