@@ -11,6 +11,7 @@
   "dependencies": {
     "athena-express": "^5.1.1",
     "aws-sdk": "^2.615.0",
+    "flat": "^5.0.0",
     "serverless-bundle": "^1.3.0",
     "serverless-dotenv-plugin": "^2.3.2",
     "serverless-offline": "^5.12.1"

@@ -1,3 +1,4 @@
+import flatten from "flat";
 const AthenaExpress = require("athena-express");
 const aws = require("aws-sdk");
 
@@ -14,20 +15,31 @@ const athenaExpress = new AthenaExpress(athenaExpressConfig);
 export async function getAll(event) {
   // let Bbox =
   // '{type=Polygon, coordinates=[[["-127.737823","52.127108"],["-102.774389","52.127108"],["-102.774389","65.165894"],["-127.737823","65.165894"],["-127.737823","52.127108"]]]}';
-  // let input = {
-  //   properties: {
-  //     title: {
-  //       en: "(?i).*Seismic.*",
-  //       fr: "(?i).*Eau.*"
-  //     }
-  //   }
-  // };
+  let input = {
+    properties: {
+      title: {
+        en: "(?i).*Water.*",
+        fr: "(?i).*Eau.*"
+      }
+    }
+  };
 
-  // let flatInput = input.entries();
+  let result = flatten(input);
+  console.log(JSON.stringify(result));
+
+  let where = "";
+
+  for (let key in result) {
+    if (where) {
+      where += " AND ";
+    }
+    where += "regexp_like(" + key + ",'" + result[key] + "')";
+  }
+
+  console.log(where);
 
   let myQuery = {
-    sql:
-      "SELECT * FROM metadata WHERE regexp_like(properties.title.en,'(?i).*Seismic.*') limit 10;",
+    sql: "SELECT * FROM metadata WHERE " + where + " limit 10;",
     db: "cgp-metadata-search-dev"
   };
 
