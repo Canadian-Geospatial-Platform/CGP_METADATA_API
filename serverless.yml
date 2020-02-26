@@ -1,4 +1,4 @@
-service: ${env:API_NAME}-tag
+service: ${env:API_NAME}-level-1
 
 custom:
   dotenv:

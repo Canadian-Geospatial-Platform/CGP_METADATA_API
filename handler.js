@@ -14,16 +14,16 @@ const athenaExpress = new AthenaExpress(athenaExpressConfig);
 export async function getAll(event) {
   // let Bbox =
   // '{type=Polygon, coordinates=[[["-127.737823","52.127108"],["-102.774389","52.127108"],["-102.774389","65.165894"],["-127.737823","65.165894"],["-127.737823","52.127108"]]]}';
-  let input = {
-    properties: {
-      title: {
-        en: "(?i).*Seismic.*",
-        fr: "(?i).*Eau.*"
-      }
-    }
-  };
+  // let input = {
+  //   properties: {
+  //     title: {
+  //       en: "(?i).*Seismic.*",
+  //       fr: "(?i).*Eau.*"
+  //     }
+  //   }
+  // };
 
-  let flatInput = input.entries();
+  // let flatInput = input.entries();
 
   let myQuery = {
     sql:
@@ -32,10 +32,11 @@ export async function getAll(event) {
   };
 
   try {
-    // let results = await athenaExpress.query(myQuery);
+    let results = await athenaExpress.query(myQuery);
+    // console.log(JSON.stringify(results));
     return {
       statusCode: 200,
-      body: JSON.stringify(flatInput)
+      body: JSON.stringify(results)
     };
   } catch (err) {
     return {
