@@ -13,15 +13,19 @@ const athenaExpress = new AthenaExpress(athenaExpressConfig);
 
 export async function getAll(event) {
   try {
-    const input = JSON.parse(event.body);
-    let result = flatten(input);
+    let input = JSON.parse(event.body);
+    const allowed = ["properties"];
+    Object.keys(input)
+      .filter(key => !allowed.includes(key))
+      .forEach(key => delete input[key]);
     let where = "";
 
-    for (let key in result) {
+    const flattenedInput = flatten(input);
+    for (let key in flatten(flattenedInput)) {
       if (where) {
         where += " AND ";
       }
-      where += "regexp_like(" + key + ",'" + result[key] + "')";
+      where += "regexp_like(" + key + ",'" + flattenedInput[key] + "')";
     }
 
     let myQuery = {
