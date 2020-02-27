@@ -11,41 +11,26 @@ const athenaExpressConfig = {
 
 const athenaExpress = new AthenaExpress(athenaExpressConfig);
 
-//Invoking a query on Amazon Athena
 export async function getAll(event) {
-  // let Bbox =
-  // '{type=Polygon, coordinates=[[["-127.737823","52.127108"],["-102.774389","52.127108"],["-102.774389","65.165894"],["-127.737823","65.165894"],["-127.737823","52.127108"]]]}';
-  let input = {
-    properties: {
-      title: {
-        en: "(?i).*Water.*",
-        fr: "(?i).*Eau.*"
-      }
-    }
-  };
-
-  let result = flatten(input);
-  console.log(JSON.stringify(result));
-
-  let where = "";
-
-  for (let key in result) {
-    if (where) {
-      where += " AND ";
-    }
-    where += "regexp_like(" + key + ",'" + result[key] + "')";
-  }
-
-  console.log(where);
-
-  let myQuery = {
-    sql: "SELECT * FROM metadata WHERE " + where + " limit 10;",
-    db: "cgp-metadata-search-dev"
-  };
-
   try {
+    const input = JSON.parse(event.body);
+    let result = flatten(input);
+    let where = "";
+
+    for (let key in result) {
+      if (where) {
+        where += " AND ";
+      }
+      where += "regexp_like(" + key + ",'" + result[key] + "')";
+    }
+
+    let myQuery = {
+      sql: "SELECT * FROM metadata WHERE " + where + " limit 10;",
+      db: "cgp-metadata-search-dev"
+    };
+
     let results = await athenaExpress.query(myQuery);
-    // console.log(JSON.stringify(results));
+
     return {
       statusCode: 200,
       body: JSON.stringify(results)
