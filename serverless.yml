@@ -1,4 +1,4 @@
-service: ${env:API_NAME}-tag
+service: ${env:API_NAME}-level-1
 
 custom:
   dotenv:
@@ -27,5 +27,5 @@ functions:
     events:
       - http:
           path: geo
-          method: get
+          method: post
           cors: true
