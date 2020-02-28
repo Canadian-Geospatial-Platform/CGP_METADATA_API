@@ -21,7 +21,7 @@ export async function getAll(event) {
     let where = "";
 
     const flattenedInput = flatten(input);
-    for (let key in flatten(flattenedInput)) {
+    for (let key in flattenedInput) {
       if (where) {
         where += " AND ";
       }
