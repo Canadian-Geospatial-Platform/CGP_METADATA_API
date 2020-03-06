@@ -37,12 +37,18 @@ export async function getAll(event) {
 
     return {
       statusCode: 200,
+      headers: {
+        "Access-Control-Allow-Origin": "*"
+      },
       body: JSON.stringify(results)
     };
   } catch (err) {
     return {
       statusCode: err.statusCode || 500,
-      headers: { "Content-Type": "text/plain" },
+      headers: {
+        "Content-Type": "text/plain",
+        "Access-Control-Allow-Origin": "*"
+      },
       body: err.message || "Could not fetch results."
     };
   }
