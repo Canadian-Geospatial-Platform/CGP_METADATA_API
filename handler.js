@@ -31,7 +31,7 @@ export async function getAll(event) {
 
     let myQuery = {
       sql:
-        "SELECT regexp_extract(\"$path\", '[^/]+$') AS Id FROM metadata WHERE " +
+        "SELECT regexp_extract(\"$path\", '[^/]+$') AS fileName FROM metadata WHERE " +
         where,
       db: "cgp-metadata-search-dev"
     };
