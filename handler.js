@@ -14,6 +14,7 @@ const athenaExpress = new AthenaExpress(athenaExpressConfig);
 export async function getAll(event) {
   try {
     let input = JSON.parse(event.body);
+    // the properties containing text fields that CAN be queried with regex
     const allowed = ["properties"];
     Object.keys(input)
       .filter(key => !allowed.includes(key))
@@ -29,7 +30,9 @@ export async function getAll(event) {
     }
 
     let myQuery = {
-      sql: "SELECT * FROM metadata WHERE " + where + " limit 10;",
+      sql:
+        "SELECT regexp_extract(\"$path\", '[^/]+$') AS Id FROM metadata WHERE " +
+        where,
       db: "cgp-metadata-search-dev"
     };
 
