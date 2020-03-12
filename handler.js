@@ -1,4 +1,3 @@
-import flatten from "flat";
 const AthenaExpress = require("athena-express");
 const aws = require("aws-sdk");
 
@@ -14,29 +13,45 @@ const athenaExpress = new AthenaExpress(athenaExpressConfig);
 export async function getAll(event) {
   try {
     let input = JSON.parse(event.body);
-    // the properties containing text fields that CAN be queried with regex
-    const allowed = ["properties"];
-    Object.keys(input)
-      .filter(key => !allowed.includes(key))
-      .forEach(key => delete input[key]);
+
     let where = "";
-
-    const flattenedInput = flatten(input);
-    for (let key in flattenedInput) {
-      if (where) {
-        where += " AND ";
+    input.where.forEach(e => {
+      if (!where) {
+        where += "WHERE";
+      } else {
+        where += " AND";
       }
-      where += "regexp_like(" + key + ",'" + flattenedInput[key] + "')";
-    }
+      let base = e.path.split(".")[0];
+      let rest = e.path
+        .split(".")
+        .slice(1)
+        .join(".");
+      where +=
+        " regexp_like(CAST(json_extract(" +
+        base +
+        ", '$." +
+        rest +
+        "') AS VARCHAR), '" +
+        e.regex +
+        "')";
+    });
 
-    let myQuery = {
+    var myQuery = "";
+    myQuery = {
       sql:
-        "SELECT regexp_extract(\"$path\", '[^/]+$') AS fileName FROM metadata WHERE " +
-        where,
-      db: "cgp-metadata-search-dev"
+        'SELECT * FROM  "metalevelonecgp_metadata_search_dev" ' +
+        where +
+        " limit 10",
+      db: "cgp-combined-metadata"
     };
 
     let results = await athenaExpress.query(myQuery);
+
+    // Parse fields containing nested json
+    results.Items.forEach(e => {
+      e.geometry = JSON.parse(e.geometry);
+      e.properties = JSON.parse(e.properties);
+    });
 
     return {
       statusCode: 200,
@@ -52,7 +67,7 @@ export async function getAll(event) {
         "Content-Type": "text/plain",
         "Access-Control-Allow-Origin": "*"
       },
-      body: err.message || "Could not fetch results."
+      body: JSON.stringify(myQuery) || "Could not fetch results"
     };
   }
 }
