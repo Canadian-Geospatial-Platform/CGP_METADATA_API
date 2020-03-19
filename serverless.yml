@@ -14,7 +14,6 @@ provider:
   profile: ${env:AWS_PROFILE}
   region: ${env:REGION}
   runtime: nodejs12.x
-  timeout: 30
   stage: ${env:NODE_ENV}
   versionFunctions: false
 

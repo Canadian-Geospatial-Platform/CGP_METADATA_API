@@ -16,33 +16,26 @@ export async function getAll(event) {
 
     let where = "";
     input.where.forEach(e => {
-      if (!where) {
-        where += "WHERE";
-      } else {
-        where += " AND";
-      }
       let base = e.path.split(".")[0];
       let rest = e.path
         .split(".")
         .slice(1)
         .join(".");
-      where +=
-        " regexp_like(CAST(json_extract(" +
+      let queryContent =
+        "regexp_like(CAST(json_extract(" +
         base +
         ", '$." +
         rest +
         "') AS VARCHAR), '" +
         e.regex +
         "')";
+      where = queryBuilder(where, queryContent, "WHERE", "AND");
     });
 
     var myQuery = "";
     myQuery = {
-      sql:
-        'SELECT * FROM  "metalevelonecgp_metadata_search_dev" ' +
-        where +
-        " limit 10",
-      db: "cgp-combined-metadata"
+      sql: 'SELECT * FROM  "cgp_metadata_search_dev" ' + where + " limit 10",
+      db: "meta_combined"
     };
 
     let results = await athenaExpress.query(myQuery);
@@ -70,6 +63,16 @@ export async function getAll(event) {
       body: JSON.stringify(myQuery) || "Could not fetch results"
     };
   }
+}
+
+function queryBuilder(baseString, content, keyword, separator) {
+  let ret = baseString;
+  if (!baseString.includes(content)) {
+    if (baseString) ret += separator + " ";
+    else ret += keyword + " ";
+    ret += baseString + content + " ";
+  }
+  return ret;
 }
 
 export default { getAll };
