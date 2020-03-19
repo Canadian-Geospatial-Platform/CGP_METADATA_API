@@ -33,18 +33,21 @@ export async function getAll(event) {
       where = queryBuilder(where, queryContent, "WHERE", "AND");
     });
 
-    let joinContent =
-      '"l2_relations_container_tag_resource" ON CAST(json_extract("cgp_metadata_search_dev".properties, \'$.id\') AS VARCHAR) = "l2_relations_container_tag_resource".resourceid LEFT JOIN "l2_tags" ON tagid = "l2_tags".id';
+    let joinContent1 =
+      '"l2_relations_container_tag_resource" ON CAST(json_extract("cgp_metadata_search_dev".properties, \'$.id\') AS VARCHAR) = "l2_relations_container_tag_resource".resourceid ';
 
+    let joinContent2 = 'LEFT JOIN "l2_tags" ON tagid = "l2_tags".id';
+
+    let joinContent = joinContent1 + joinContent2;
     join = queryBuilder(join, joinContent, "LEFT JOIN");
 
     var myQuery = "";
     myQuery = {
       sql:
-        'SELECT json_extract("cgp_metadata_search_dev".properties, \'$.id\') as Id, array_agg("l2_tags".title) as tags FROM  "cgp_metadata_search_dev" ' +
+        'SELECT json_extract("cgp_metadata_search_dev".properties, \'$.id\') as id, array_agg("l2_tags".title) as tags FROM  "cgp_metadata_search_dev" ' +
         join +
         where +
-        "GROUP BY json_extract(\"cgp_metadata_search_dev\".properties, '$.id'), geometry, properties",
+        "GROUP BY json_extract(\"cgp_metadata_search_dev\".properties, '$.id'), geometry, properties limit 10",
       db: "meta_combined"
     };
 
