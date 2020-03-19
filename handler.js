@@ -41,20 +41,20 @@ export async function getAll(event) {
     var myQuery = "";
     myQuery = {
       sql:
-        'SELECT * FROM  "cgp_metadata_search_dev" ' +
+        'SELECT json_extract("cgp_metadata_search_dev".properties, \'$.id\') as Id, array_agg("l2_tags".title) as tags FROM  "cgp_metadata_search_dev" ' +
         join +
         where +
-        " limit 10",
+        "GROUP BY json_extract(\"cgp_metadata_search_dev\".properties, '$.id'), geometry, properties",
       db: "meta_combined"
     };
 
     let results = await athenaExpress.query(myQuery);
 
     // Parse fields containing nested json
-    results.Items.forEach(e => {
-      e.geometry = JSON.parse(e.geometry);
-      e.properties = JSON.parse(e.properties);
-    });
+    // results.Items.forEach(e => {
+    //   e.geometry = JSON.parse(e.geometry);
+    //   e.properties = JSON.parse(e.properties);
+    // });
 
     return {
       statusCode: 200,
