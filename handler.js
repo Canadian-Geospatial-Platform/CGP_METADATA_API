@@ -36,10 +36,10 @@ export async function getAll(event) {
     let joinContent1 =
       '"l2_relations_container_tag_resource" ON CAST(json_extract("cgp_metadata_search_dev".properties, \'$.id\') AS VARCHAR) = "l2_relations_container_tag_resource".resourceid ';
 
-    let joinContent2 = 'LEFT JOIN "l2_tags" ON tagid = "l2_tags".id';
+    let joinContent2 = '"l2_tags" ON tagid = "l2_tags".id';
 
-    let joinContent = joinContent1 + joinContent2;
-    join = queryBuilder(join, joinContent, "LEFT JOIN");
+    join = queryBuilder(join, joinContent1, "LEFT JOIN", "LEFT JOIN");
+    join = queryBuilder(join, joinContent2, "LEFT JOIN", "LEFT JOIN");
 
     var myQuery = "";
     myQuery = {
@@ -81,9 +81,12 @@ export async function getAll(event) {
 function queryBuilder(baseString, content, keyword, separator) {
   let ret = baseString;
   if (!baseString.includes(content)) {
-    if (baseString) ret += separator + " ";
-    else ret += keyword + " ";
-    ret += baseString + content + " ";
+    if (baseString) {
+      ret += separator + " ";
+    } else {
+      ret += keyword + " ";
+    }
+    ret += content + " ";
   }
   return ret;
 }
