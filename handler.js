@@ -15,6 +15,7 @@ export async function getAll(event) {
     let input = JSON.parse(event.body);
 
     let where = "";
+    let join = "";
     input.where.forEach(e => {
       let base = e.path.split(".")[0];
       let rest = e.path
@@ -32,9 +33,18 @@ export async function getAll(event) {
       where = queryBuilder(where, queryContent, "WHERE", "AND");
     });
 
+    let joinContent =
+      '"l2_relations_container_tag_resource" ON CAST(json_extract("cgp_metadata_search_dev".properties, \'$.id\') AS VARCHAR) = "l2_relations_container_tag_resource".resourceid LEFT JOIN "l2_tags" ON tagid = "l2_tags".id';
+
+    join = queryBuilder(join, joinContent, "LEFT JOIN");
+
     var myQuery = "";
     myQuery = {
-      sql: 'SELECT * FROM  "cgp_metadata_search_dev" ' + where + " limit 10",
+      sql:
+        'SELECT * FROM  "cgp_metadata_search_dev" ' +
+        join +
+        where +
+        " limit 10",
       db: "meta_combined"
     };
 
