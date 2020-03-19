@@ -14,8 +14,12 @@ export async function getAll(event) {
   try {
     let input = JSON.parse(event.body);
 
-    let where = "";
-    let join = "";
+    // query variables
+    let qVars = {
+      where: "",
+      join: ""
+    };
+
     input.where.forEach(e => {
       let base = e.path.split(".")[0];
       let rest = e.path
@@ -30,7 +34,7 @@ export async function getAll(event) {
         "') AS VARCHAR), '" +
         e.regex +
         "')";
-      where = queryBuilder(where, queryContent, "WHERE", "AND");
+      qVars.where = queryBuilder(qVars.where, queryContent, "WHERE", "AND");
     });
 
     let joinContent1 =
@@ -38,15 +42,25 @@ export async function getAll(event) {
 
     let joinContent2 = '"l2_tags" ON tagid = "l2_tags".id';
 
-    join = queryBuilder(join, joinContent1, "LEFT JOIN", "LEFT JOIN");
-    join = queryBuilder(join, joinContent2, "LEFT JOIN", "LEFT JOIN");
+    qVars.join = queryBuilder(
+      qVars.join,
+      joinContent1,
+      "LEFT JOIN",
+      "LEFT JOIN"
+    );
+    qVars.join = queryBuilder(
+      qVars.join,
+      joinContent2,
+      "LEFT JOIN",
+      "LEFT JOIN"
+    );
 
     var myQuery = "";
     myQuery = {
       sql:
         'SELECT json_extract("cgp_metadata_search_dev".properties, \'$.id\') as id, array_agg("l2_tags".title) as tags FROM  "cgp_metadata_search_dev" ' +
-        join +
-        where +
+        qVars.join +
+        qVars.where +
         "GROUP BY json_extract(\"cgp_metadata_search_dev\".properties, '$.id'), geometry, properties limit 10",
       db: "meta_combined"
     };
@@ -81,11 +95,8 @@ export async function getAll(event) {
 function queryBuilder(baseString, content, keyword, separator) {
   let ret = baseString;
   if (!baseString.includes(content)) {
-    if (baseString) {
-      ret += separator + " ";
-    } else {
-      ret += keyword + " ";
-    }
+    if (baseString) ret += separator + " ";
+    else ret += keyword + " ";
     ret += content + " ";
   }
   return ret;
