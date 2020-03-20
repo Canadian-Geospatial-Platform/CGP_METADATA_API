@@ -17,7 +17,7 @@ export async function getAll(event) {
     // query variables
     let qVars = {
       select:
-        'SELECT json_extract("cgp_metadata_search_dev".properties, \'$.id\') as id, array_agg("l2_tags".title) as tags FROM  "cgp_metadata_search_dev" ',
+        'SELECT CAST(json_extract("cgp_metadata_search_dev".properties, \'$.id\') AS VARCHAR) AS id, array_agg("l2_tags".title) AS tags FROM  "cgp_metadata_search_dev" ',
       join: "",
       where: "",
       groupBy:
