@@ -1,3 +1,4 @@
+const _ = require("lodash");
 const AthenaExpress = require("athena-express");
 const aws = require("aws-sdk");
 
@@ -27,7 +28,11 @@ export async function getAll(event) {
     };
 
     filterOnTags(qVars, input.tags);
-    selectProperty(qVars);
+
+    input.select.forEach(e => {
+      selectProperty(qVars, e);
+    });
+
     input.regex.forEach(e => {
       let base = e.path.split(".")[0];
       let rest = e.path
@@ -61,10 +66,11 @@ export async function getAll(event) {
     let results = await athenaExpress.query(myQuery);
 
     // Parse fields containing nested json
-    // results.Items.forEach(e => {
-    //   e.geometry = JSON.parse(e.geometry);
-    //   e.properties = JSON.parse(e.properties);
-    // });
+    input.select.forEach(f => {
+      results.Items.forEach(e => {
+        _.set(e, f, JSON.parse(_.get(e, f)));
+      });
+    });
 
     return {
       statusCode: 200,
@@ -119,8 +125,15 @@ function joinTags(qVars) {
 }
 
 function selectProperty(qVars, path) {
+  let splitPath = path.split(".");
   let selectString =
-    "json_extract(\"cgp_metadata_search_dev\".properties, '$.title.en')";
+    'json_extract("cgp_metadata_search_dev".' +
+    splitPath.shift() +
+    ", '$." +
+    splitPath.join(".") +
+    "') AS \"" +
+    path +
+    '"';
   qVars.select = queryBuilder(qVars.select, selectString, "SELECT", ",");
 }
 
