@@ -22,8 +22,10 @@ export async function getAll(event) {
       where: "",
       groupBy:
         "GROUP BY json_extract(\"cgp_metadata_search_dev\".properties, '$.id'), geometry, properties ",
-      having: "HAVING contains(array_agg(\"l2_tags\".title), 'water') limit 10"
+      having: ""
     };
+
+    filterOnTags(qVars, input.tags);
 
     input.regex.forEach(e => {
       let base = e.path.split(".")[0];
@@ -63,7 +65,12 @@ export async function getAll(event) {
     var myQuery = "";
     myQuery = {
       sql:
-        qVars.select + qVars.join + qVars.where + qVars.groupBy + qVars.having,
+        qVars.select +
+        qVars.join +
+        qVars.where +
+        qVars.groupBy +
+        qVars.having +
+        "limit 10",
       db: "meta_combined"
     };
 
@@ -102,6 +109,13 @@ function queryBuilder(baseString, content, keyword, separator) {
     ret += content + " ";
   }
   return ret;
+}
+
+function filterOnTags(qVars, tags = []) {
+  tags.forEach(e => {
+    let queryString = 'contains(array_agg("l2_tags".title), \'' + e + "')";
+    qVars.having = queryBuilder(qVars.having, queryString, "HAVING", "AND");
+  });
 }
 
 export default { getAll };
