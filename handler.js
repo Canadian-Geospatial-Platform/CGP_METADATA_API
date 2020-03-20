@@ -44,24 +44,6 @@ export async function getAll(event) {
       qVars.where = queryBuilder(qVars.where, queryContent, "WHERE", "AND");
     });
 
-    let joinContent1 =
-      '"l2_relations_container_tag_resource" ON CAST(json_extract("cgp_metadata_search_dev".properties, \'$.id\') AS VARCHAR) = "l2_relations_container_tag_resource".resourceid ';
-
-    let joinContent2 = '"l2_tags" ON tagid = "l2_tags".id';
-
-    qVars.join = queryBuilder(
-      qVars.join,
-      joinContent1,
-      "LEFT JOIN",
-      "LEFT JOIN"
-    );
-    qVars.join = queryBuilder(
-      qVars.join,
-      joinContent2,
-      "LEFT JOIN",
-      "LEFT JOIN"
-    );
-
     var myQuery = "";
     myQuery = {
       sql:
@@ -112,10 +94,26 @@ function queryBuilder(baseString, content, keyword, separator) {
 }
 
 function filterOnTags(qVars, tags = []) {
+  joinTags(qVars);
   tags.forEach(e => {
     let queryString = 'contains(array_agg("l2_tags".title), \'' + e + "')";
     qVars.having = queryBuilder(qVars.having, queryString, "HAVING", "AND");
   });
+}
+
+function joinTags(qVars) {
+  let joinTagResourceRelations =
+    '"l2_relations_container_tag_resource" ON CAST(json_extract("cgp_metadata_search_dev".properties, \'$.id\') AS VARCHAR) = "l2_relations_container_tag_resource".resourceid ';
+
+  let joinTags = '"l2_tags" ON tagid = "l2_tags".id';
+
+  qVars.join = queryBuilder(
+    qVars.join,
+    joinTagResourceRelations,
+    "LEFT JOIN",
+    "LEFT JOIN"
+  );
+  qVars.join = queryBuilder(qVars.join, joinTags, "LEFT JOIN", "LEFT JOIN");
 }
 
 export default { getAll };
