@@ -17,7 +17,8 @@ export async function getAll(event) {
     // query variables
     let qVars = {
       select:
-        'SELECT CAST(json_extract("cgp_metadata_search_dev".properties, \'$.id\') AS VARCHAR) AS id, array_agg("l2_tags".title) AS tags FROM  "cgp_metadata_search_dev" ',
+        'SELECT CAST(json_extract("cgp_metadata_search_dev".properties, \'$.id\') AS VARCHAR) AS id, array_agg("l2_tags".title) AS tags ',
+      from: 'FROM  "cgp_metadata_search_dev" ',
       join: "",
       where: "",
       groupBy:
@@ -26,7 +27,7 @@ export async function getAll(event) {
     };
 
     filterOnTags(qVars, input.tags);
-
+    selectProperty(qVars);
     input.regex.forEach(e => {
       let base = e.path.split(".")[0];
       let rest = e.path
@@ -48,6 +49,7 @@ export async function getAll(event) {
     myQuery = {
       sql:
         qVars.select +
+        qVars.from +
         qVars.join +
         qVars.where +
         qVars.groupBy +
@@ -114,6 +116,12 @@ function joinTags(qVars) {
     "LEFT JOIN"
   );
   qVars.join = queryBuilder(qVars.join, joinTags, "LEFT JOIN", "LEFT JOIN");
+}
+
+function selectProperty(qVars, path) {
+  let selectString =
+    "json_extract(\"cgp_metadata_search_dev\".properties, '$.title.en')";
+  qVars.select = queryBuilder(qVars.select, selectString, "SELECT", ",");
 }
 
 export default { getAll };
