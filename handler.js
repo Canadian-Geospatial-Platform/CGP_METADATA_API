@@ -16,11 +16,16 @@ export async function getAll(event) {
 
     // query variables
     let qVars = {
+      select:
+        'SELECT json_extract("cgp_metadata_search_dev".properties, \'$.id\') as id, array_agg("l2_tags".title) as tags FROM  "cgp_metadata_search_dev" ',
+      join: "",
       where: "",
-      join: ""
+      groupBy:
+        "GROUP BY json_extract(\"cgp_metadata_search_dev\".properties, '$.id'), geometry, properties ",
+      having: "HAVING contains(array_agg(\"l2_tags\".title), 'water') limit 10"
     };
 
-    input.where.forEach(e => {
+    input.regex.forEach(e => {
       let base = e.path.split(".")[0];
       let rest = e.path
         .split(".")
@@ -58,10 +63,7 @@ export async function getAll(event) {
     var myQuery = "";
     myQuery = {
       sql:
-        'SELECT json_extract("cgp_metadata_search_dev".properties, \'$.id\') as id, array_agg("l2_tags".title) as tags FROM  "cgp_metadata_search_dev" ' +
-        qVars.join +
-        qVars.where +
-        "GROUP BY json_extract(\"cgp_metadata_search_dev\".properties, '$.id'), geometry, properties limit 10",
+        qVars.select + qVars.join + qVars.where + qVars.groupBy + qVars.having,
       db: "meta_combined"
     };
 
