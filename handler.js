@@ -66,9 +66,9 @@ export async function getAll(event) {
     let results = await athenaExpress.query(myQuery);
 
     // Parse fields containing nested json
-    input.select.forEach(f => {
-      results.Items.forEach(e => {
-        _.set(e, f, JSON.parse(_.get(e, f)));
+    input.select.forEach(path => {
+      results.Items.forEach(item => {
+        _.set(item, path, JSON.parse(_.get(item, path, null)));
       });
     });
 
