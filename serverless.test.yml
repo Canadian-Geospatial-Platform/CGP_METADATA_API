@@ -1,0 +1,10 @@
+- name: accept valid request
+  endpoint: { function: getAll }
+  request:
+    body:
+      regex: [{ path: properties.id, regex: (?i).*w.* }]
+      tags: [water, air]
+      select: [properties.title, tags]
+
+  response:
+    code: 200
