@@ -28,7 +28,7 @@ export async function simpleSearch(event) {
     };
 
     applySelect(qVars, JSON.parse(event.queryStringParameters.select));
-    applySimpleRegexToJsonField(qVars, event.queryStringParameters.regex);
+    applyRegex(qVars, JSON.parse(event.queryStringParameters.regex));
     filterOnTags(qVars, JSON.parse(event.queryStringParameters.tags));
     applyJoinFlags(qVars);
 
@@ -40,7 +40,8 @@ export async function simpleSearch(event) {
         qVars.join +
         qVars.where +
         qVars.groupBy +
-        qVars.having,
+        qVars.having +
+        " LIMIT 10",
       db: "meta_combined",
     };
 
@@ -143,6 +144,12 @@ function applySelect(qVars, fields) {
   });
 }
 
+function applyRegex(qVars, regexes) {
+  regexes.forEach((e) => {
+    applySimpleRegexToJsonField(qVars, e);
+  });
+}
+
 /**
  * @input qVars the shared data used to construct the query
  * @input input the query object containing a list containing the regex to apply
@@ -157,7 +164,7 @@ function applySimpleRegexToJsonField(qVars, regex) {
     "properties.organisationname.en",
     "properties.organisationname.fr",
   ];
-  let keyword = "AND";
+  let keyword = "AND (";
   fields.forEach((e) => {
     let splitPath = e.split(".");
     if (["properties"].includes(splitPath[0])) {
@@ -169,10 +176,11 @@ function applySimpleRegexToJsonField(qVars, regex) {
         "') AS VARCHAR), '" +
         regex +
         "')";
-      qVars.where = queryString(qVars.where, content, "WHERE", keyword);
+      qVars.where = queryString(qVars.where, content, "WHERE (", keyword);
     }
     keyword = "OR";
   });
+  qVars.where += ") ";
 }
 
 /**
