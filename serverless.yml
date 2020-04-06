@@ -18,15 +18,34 @@ provider:
   runtime: nodejs12.x
   stage: ${env:NODE_ENV}
   versionFunctions: false
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "s3:*"
+      Resource:
+        - "*"
 
 package:
   individually: true
 
 functions:
-  getAll:
-    handler: handler.getAll
+  simpleSearch:
+    handler: handler.simpleSearch
     events:
       - http:
           path: geo
-          method: post
+          method: get
           cors: true
+          request:
+            parameters:
+              querystrings:
+                regex: true
+                select: true
+                tags: true
+  # advancedSearch:
+  #   handler: handler.advancedSearch
+  #   events:
+  #     - http:
+  #         path: geo
+  #         method: post
+  #         cors: true
