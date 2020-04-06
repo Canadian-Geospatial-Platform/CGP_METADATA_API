@@ -48,39 +48,8 @@ object returned by the database.
 
 ### Sample Query
 
-- Query type: POST
-- Sample url: https://zq7vthl3ye.execute-api.ca-central-1.amazonaws.com/sta/geo
-- body:
-
-```JSON
-{
-    "regex": [
-        {
-            "path": "properties.title.en",
-            "regex": "(?i).*(water).*"
-        },
-        {
-            "path": "properties.description.en",
-            "regex": "(?i).*().*"
-        },
-        {
-            "path": "properties.keyword.en",
-            "regex": "(?i).*().*"
-        },
-        {
-            "path": "properties.topiccategory",
-            "regex": "(?i).*().*"
-        }
-    ],
-    "tags":["water", "air"],
-    "select": [
-        "properties.title",
-        "tags",
-        "properties.description",
-        "popularityindex"
-    ]
-}
-```
+- Query type: GET
+- Sample url: https://zq7vthl3ye.execute-api.ca-central-1.amazonaws.com/sta/geo?regex=(?i).*water.*&select=["properties.description", "properties.title","tags" ]&tags=["air", "water" ]
 
 ### Sample Result
 
