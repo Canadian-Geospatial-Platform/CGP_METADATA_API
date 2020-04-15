@@ -28,6 +28,7 @@ export async function simpleSearch(event) {
     };
 
     applySelect(qVars, JSON.parse(event.queryStringParameters.select));
+    applyIdFilter(qVars, event.queryStringParameters.Id);
     applyRegex(qVars, JSON.parse(event.queryStringParameters.regex));
     filterOnTags(qVars, JSON.parse(event.queryStringParameters.tags));
     applyJoinFlags(qVars);
@@ -152,7 +153,7 @@ function applyRegex(qVars, regexes) {
 
 /**
  * @input qVars the shared data used to construct the query
- * @input input the query object containing a list containing the regex to apply
+ * @input regex the query object containing a list containing the regex to apply
  * @post filters based on regex against json columns will be applied
  */
 function applySimpleRegexToJsonField(qVars, regex) {
@@ -181,6 +182,20 @@ function applySimpleRegexToJsonField(qVars, regex) {
     keyword = "OR";
   });
   qVars.where += ") ";
+}
+
+/**
+ * @input qVars the shared data used to construct the query
+ * @input Id the Id of the resource to return
+ * @post filters based on a given Id
+ */
+function applyIdFilter(qVars, Id) {
+  if (!Id) return;
+  let content =
+    "CAST(json_extract(\"cgp_metadata_search_dev\".properties, '$.id') AS VARCHAR) = '" +
+    Id +
+    "'";
+  qVars.where = queryString(qVars.where, content, "WHERE", "AND");
 }
 
 /**
