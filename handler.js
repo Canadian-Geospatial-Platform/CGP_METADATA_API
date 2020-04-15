@@ -27,10 +27,14 @@ export async function simpleSearch(event) {
       nestedJsonPaths: [],
     };
 
-    applySelect(qVars, JSON.parse(event.queryStringParameters.select));
-    applyIdFilter(qVars, event.queryStringParameters.Id);
-    applyRegex(qVars, JSON.parse(event.queryStringParameters.regex));
-    filterOnTags(qVars, JSON.parse(event.queryStringParameters.tags));
+    if (event.queryStringParameters && event.queryStringParameters.select)
+      applySelect(qVars, JSON.parse(event.queryStringParameters.select));
+    if (event.queryStringParameters && event.queryStringParameters.id)
+      applyIdFilter(qVars, event.queryStringParameters.Id);
+    if (event.queryStringParameters && event.queryStringParameters.regex)
+      applyRegex(qVars, JSON.parse(event.queryStringParameters.regex));
+    if (event.queryStringParameters && event.queryStringParameters.tags)
+      filterOnTags(qVars, JSON.parse(event.queryStringParameters.tags));
     applyJoinFlags(qVars);
 
     var myQuery = "";
