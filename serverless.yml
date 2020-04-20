@@ -42,6 +42,7 @@ functions:
                 regex: true
                 select: true
                 tags: true
+                themes: true
   # advancedSearch:
   #   handler: handler.advancedSearch
   #   events:

@@ -1,10 +1,6 @@
-- name: accept valid request
-  endpoint: { function: getAll }
-  request:
-    body:
-      regex: [{ path: properties.id, regex: (?i).*w.* }]
-      tags: [water, air]
-      select: [properties.title, tags]
-
+- name: accept valid theme request
+  endpoint:
+    method: GET
+    path: /geo?themes=["water"]
   response:
     code: 200

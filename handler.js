@@ -27,14 +27,18 @@ export async function simpleSearch(event) {
       nestedJsonPaths: [],
     };
 
-    if (event.queryStringParameters && event.queryStringParameters.select)
-      applySelect(qVars, JSON.parse(event.queryStringParameters.select));
-    if (event.queryStringParameters && event.queryStringParameters.id)
-      applyIdFilter(qVars, event.queryStringParameters.id);
-    if (event.queryStringParameters && event.queryStringParameters.regex)
-      applyRegex(qVars, JSON.parse(event.queryStringParameters.regex));
-    if (event.queryStringParameters && event.queryStringParameters.tags)
-      filterOnTags(qVars, JSON.parse(event.queryStringParameters.tags));
+    if (event.queryStringParameters) {
+      if (event.queryStringParameters.select)
+        applySelect(qVars, JSON.parse(event.queryStringParameters.select));
+      if (event.queryStringParameters.id)
+        filterOnId(qVars, event.queryStringParameters.id);
+      if (event.queryStringParameters.regex)
+        filterOnRegex(qVars, JSON.parse(event.queryStringParameters.regex));
+      if (event.queryStringParameters.tags)
+        filterOnTags(qVars, JSON.parse(event.queryStringParameters.tags));
+      if (event.queryStringParameters.themes)
+        filterOnThemes(qVars, JSON.parse(event.queryStringParameters.themes));
+    }
     applyJoinFlags(qVars);
 
     var myQuery = "";
@@ -73,63 +77,6 @@ export async function simpleSearch(event) {
   }
 }
 
-// export async function advancedSearch(event) {
-//   try {
-//     let input = JSON.parse(event.body);
-//     // query variables
-//     let qVars = {
-//       select:
-//         "SELECT CAST(json_extract(\"cgp_metadata_search_dev\".properties, '$.id') AS VARCHAR) AS id ",
-//       from: 'FROM "cgp_metadata_search_dev" ',
-//       join: "",
-//       where: "",
-//       groupBy:
-//         "GROUP BY json_extract(\"cgp_metadata_search_dev\".properties, '$.id'), geometry, properties ",
-//       having: "",
-//       joinFlags: { l2_tags: false, l2_metadata: false },
-//       nestedJsonPaths: [],
-//     };
-
-//     applySelect(qVars, input);
-//     applyAdvancedRegexToJsonField(qVars, input);
-//     filterOnTags(qVars, input.tags);
-//     applyJoinFlags(qVars);
-
-//     var myQuery = "";
-//     myQuery = {
-//       sql:
-//         qVars.select +
-//         qVars.from +
-//         qVars.join +
-//         qVars.where +
-//         qVars.groupBy +
-//         qVars.having,
-//       db: "meta_combined",
-//     };
-
-//     let results = await athenaExpress.query(myQuery);
-
-//     parseJsonFields(qVars.nestedJsonPaths, results);
-
-//     return {
-//       statusCode: 200,
-//       headers: {
-//         "Access-Control-Allow-Origin": "*",
-//       },
-//       body: JSON.stringify(results),
-//     };
-//   } catch (err) {
-//     return {
-//       statusCode: err.statusCode || 500,
-//       headers: {
-//         "Content-Type": "text/plain",
-//         "Access-Control-Allow-Origin": "*",
-//       },
-//       body: JSON.stringify(myQuery) || "Could not fetch results",
-//     };
-//   }
-// }
-
 /**
  * @input nestedJsonPaths A list containing the path to json fields to parse in the results object
  * @input results the object containing a list of items returned by the athena query
@@ -149,9 +96,20 @@ function applySelect(qVars, fields) {
   });
 }
 
-function applyRegex(qVars, regexes) {
+function filterOnRegex(qVars, regexes) {
   regexes.forEach((e) => {
     applySimpleRegexToJsonField(qVars, e);
+  });
+}
+
+function filterOnThemes(qVars, themes) {
+  themes.forEach((e) => {
+    let content =
+      'regexp_like(CAST(json_extract("properties", \'$.topiccategory' +
+      "') AS VARCHAR), '(?i).*" +
+      e +
+      ".*')";
+    qVars.where = queryString(qVars.where, content, "WHERE", "AND");
   });
 }
 
@@ -193,35 +151,13 @@ function applySimpleRegexToJsonField(qVars, regex) {
  * @input Id the Id of the resource to return
  * @post filters based on a given Id
  */
-function applyIdFilter(qVars, id) {
+function filterOnId(qVars, id) {
   let content =
     "CAST(json_extract(\"cgp_metadata_search_dev\".properties, '$.id') AS VARCHAR) = '" +
     id +
     "'";
   qVars.where = queryString(qVars.where, content, "WHERE", "AND");
 }
-
-/**
- * @input qVars the shared data used to construct the query
- * @input input the query object containing a list containing routes and regex to apply
- * @post filters based on regex against json columns will be applied
- */
-// function applyAdvancedRegexToJsonField(qVars, input) {
-//   input.regex.forEach((e) => {
-//     let splitPath = e.path.split(".");
-//     if (["properties"].includes(splitPath[0])) {
-//       let content =
-//         "regexp_like(CAST(json_extract(" +
-//         splitPath.shift() +
-//         ", '$." +
-//         splitPath.join(".") +
-//         "') AS VARCHAR), '" +
-//         e.regex +
-//         "')";
-//       qVars.where = queryString(qVars.where, content, "WHERE", "AND");
-//     }
-//   });
-// }
 
 /**
  * @input baseString the initial string to witch an extension will be made
@@ -370,5 +306,84 @@ function selectFromSql(qVars, tableName, fieldName) {
     ","
   );
 }
+
+// export async function advancedSearch(event) {
+//   try {
+//     let input = JSON.parse(event.body);
+//     // query variables
+//     let qVars = {
+//       select:
+//         "SELECT CAST(json_extract(\"cgp_metadata_search_dev\".properties, '$.id') AS VARCHAR) AS id ",
+//       from: 'FROM "cgp_metadata_search_dev" ',
+//       join: "",
+//       where: "",
+//       groupBy:
+//         "GROUP BY json_extract(\"cgp_metadata_search_dev\".properties, '$.id'), geometry, properties ",
+//       having: "",
+//       joinFlags: { l2_tags: false, l2_metadata: false },
+//       nestedJsonPaths: [],
+//     };
+
+//     applySelect(qVars, input);
+//     applyAdvancedRegexToJsonField(qVars, input);
+//     filterOnTags(qVars, input.tags);
+//     applyJoinFlags(qVars);
+
+//     var myQuery = "";
+//     myQuery = {
+//       sql:
+//         qVars.select +
+//         qVars.from +
+//         qVars.join +
+//         qVars.where +
+//         qVars.groupBy +
+//         qVars.having,
+//       db: "meta_combined",
+//     };
+
+//     let results = await athenaExpress.query(myQuery);
+
+//     parseJsonFields(qVars.nestedJsonPaths, results);
+
+//     return {
+//       statusCode: 200,
+//       headers: {
+//         "Access-Control-Allow-Origin": "*",
+//       },
+//       body: JSON.stringify(results),
+//     };
+//   } catch (err) {
+//     return {
+//       statusCode: err.statusCode || 500,
+//       headers: {
+//         "Content-Type": "text/plain",
+//         "Access-Control-Allow-Origin": "*",
+//       },
+//       body: JSON.stringify(myQuery) || "Could not fetch results",
+//     };
+//   }
+// }
+
+/**
+ * @input qVars the shared data used to construct the query
+ * @input input the query object containing a list containing routes and regex to apply
+ * @post filters based on regex against json columns will be applied
+ */
+// function applyAdvancedRegexToJsonField(qVars, input) {
+//   input.regex.forEach((e) => {
+//     let splitPath = e.path.split(".");
+//     if (["properties"].includes(splitPath[0])) {
+//       let content =
+//         "regexp_like(CAST(json_extract(" +
+//         splitPath.shift() +
+//         ", '$." +
+//         splitPath.join(".") +
+//         "') AS VARCHAR), '" +
+//         e.regex +
+//         "')";
+//       qVars.where = queryString(qVars.where, content, "WHERE", "AND");
+//     }
+//   });
+// }
 
 export default { simpleSearch /**, advancedSearch*/ };
