@@ -31,7 +31,7 @@ export async function simpleSearch(event) {
       if (event.queryStringParameters.select)
         applySelect(qVars, JSON.parse(event.queryStringParameters.select));
       if (event.queryStringParameters.id)
-        filterOnId(qVars, event.queryStringParameters.id);
+        filterOnId(qVars, JSON.parse(event.queryStringParameters.id));
       if (event.queryStringParameters.regex)
         filterOnRegex(qVars, JSON.parse(event.queryStringParameters.regex));
       if (event.queryStringParameters.tags)
@@ -148,14 +148,20 @@ function applySimpleRegexToJsonField(qVars, regex) {
 
 /**
  * @input qVars the shared data used to construct the query
- * @input Id the Id of the resource to return
+ * @input Id an array of id's of values to be returned of the resource to return
  * @post filters based on a given Id
  */
 function filterOnId(qVars, id) {
-  let content =
-    "CAST(json_extract(\"cgp_metadata_search_dev\".properties, '$.id') AS VARCHAR) = '" +
-    id +
-    "'";
+  if (!id.length) return;
+  let content = "contains(ARRAY[";
+  let firstElementFlag = true;
+  id.forEach((e) => {
+    if (!firstElementFlag) content += ", ";
+    content += "'" + e + "'";
+    firstElementFlag = false;
+  });
+  content +=
+    "], CAST(json_extract(\"cgp_metadata_search_dev\".properties, '$.id') AS VARCHAR))";
   qVars.where = queryString(qVars.where, content, "WHERE", "AND");
 }
 
