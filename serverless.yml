@@ -51,10 +51,3 @@ functions:
                 tags: false
                 themes: false
                 id: false
-  # advancedSearch:
-  #   handler: handler.advancedSearch
-  #   events:
-  #     - http:
-  #         path: geo
-  #         method: post
-  #         cors: true

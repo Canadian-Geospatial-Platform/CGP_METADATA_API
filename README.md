@@ -49,7 +49,7 @@ object returned by the database.
 ### Sample Query
 
 - Query type: GET
-- Sample url: https://zq7vthl3ye.execute-api.ca-central-1.amazonaws.com/sta/geo?regex=(?i).*water.*&select=["properties.description", "properties.title","tags" ]&tags=["air", "water" ]
+- Sample url: https://tf7rzxdu96.execute-api.ca-central-1.amazonaws.com/dev/geo?select=%5B%22properties%22%2C%22tags%22%5D&id=%5B%2211436a7f-87fc-afd7-a531-58dce5791d32%22%5D&regex=%5B%5D&themes=%5B%5D&tags=%5B%5D
 
 ### Sample Result
 
@@ -116,10 +116,10 @@ From the AWS console under services/AWS glue:
 1. If one is not yet created, create a connection to your level 2 metadata
    database.
 2. If one is not yet created, create a database in glue to store your tables.
-3. create and run a crawler for each level 2 table that you wish to query with
-   athena.
-4. Create and an etl job using the schemas generated on step 3. As a data target,
-   choose s3 as your data store, parquet as the format and point to the desired
-   storage location
+3. Create and run an etl job to bring your data from the database to s3. If your
+   database schema has changed and you are reusing an old etl, make shure to edit
+   your script to add the new mappings.
+4. create and run a crawler against the data added to s3. you will need one
+   crawler for each level 2 table that you wish to import and query with athena.
 5. Your data should be updated. You can put jobs on a timer to automate this
    process.
