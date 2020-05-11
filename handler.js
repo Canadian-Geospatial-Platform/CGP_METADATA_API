@@ -15,9 +15,13 @@ export async function simpleSearch(event) {
   try {
     // query variables
     let qVars = {
-      rn: {
-        start: "SELECT * FROM (SELECT row_number() over() AS rn, * FROM ( ",
-        end: ")) ",
+      rowNumber: {
+        start: "",
+        end: "",
+      },
+      count: {
+        start: "",
+        end: "",
       },
       select:
         "SELECT CAST(json_extract(\"cgp_metadata_search_dev\".properties, '$.id') AS VARCHAR) AS id ",
@@ -59,7 +63,8 @@ export async function simpleSearch(event) {
     var myQuery = "";
     myQuery = {
       sql:
-        qVars.rn.start +
+        qVars.count.start +
+        qVars.rowNumber.start +
         qVars.select +
         qVars.from +
         qVars.join +
@@ -67,7 +72,8 @@ export async function simpleSearch(event) {
         qVars.groupBy +
         qVars.having +
         qVars.orderBy +
-        qVars.rn.end,
+        qVars.rowNumber.end +
+        qVars.count.end,
       db: "meta_combined",
     };
 
@@ -101,7 +107,10 @@ export async function simpleSearch(event) {
  * @post the results returned will have a row number between min and max
  */
 function filterOnRowNumber(qVars, min, max) {
-  qVars.rn.end += "WHERE rn BETWEEN " + min + " AND " + max + " ";
+  qVars.rowNumber.start =
+    "SELECT * FROM (SELECT row_number() over() AS rowNumber, * FROM ( ";
+  qVars.rowNumber.end =
+    ")) WHERE rowNumber BETWEEN " + min + " AND " + max + " ";
 }
 
 /**
@@ -117,10 +126,21 @@ function parseJsonFields(nestedJsonPaths, results) {
   });
 }
 
+/**
+ * @input qVars the shared data used to construct the query
+ * @input fields an array containing the field to return XOR the keyword "count"
+ * @post if an array of fields was passed, their values will be added to the result.
+ * if the "count" keyword was passed, the total result count will instead be returned.
+ */
 function applySelect(qVars, fields) {
-  fields.forEach((e) => {
-    selectProperty(qVars, e);
-  });
+  if (fields == "count") {
+    qVars.count.start = "SELECT COUNT (*) AS resultcount FROM ( ";
+    qVars.count.end = ") ";
+  } else {
+    fields.forEach((e) => {
+      selectProperty(qVars, e);
+    });
+  }
 }
 
 function filterOnRegex(qVars, regexes) {
