@@ -19,12 +19,8 @@ export async function simpleSearch(event) {
         start: "",
         end: "",
       },
-      count: {
-        start: "",
-        end: "",
-      },
       select:
-        "SELECT CAST(json_extract(\"cgp_metadata_search_dev\".properties, '$.id') AS VARCHAR) AS id ",
+        "SELECT CAST(json_extract(\"cgp_metadata_search_dev\".properties, '$.id') AS VARCHAR) AS id, COUNT(*) OVER() AS totalresultcount ",
       from: 'FROM "cgp_metadata_search_dev" ',
       join: "",
       where: "",
@@ -63,7 +59,6 @@ export async function simpleSearch(event) {
     var myQuery = "";
     myQuery = {
       sql:
-        qVars.count.start +
         qVars.rowNumber.start +
         qVars.select +
         qVars.from +
@@ -72,8 +67,7 @@ export async function simpleSearch(event) {
         qVars.groupBy +
         qVars.having +
         qVars.orderBy +
-        qVars.rowNumber.end +
-        qVars.count.end,
+        qVars.rowNumber.end,
       db: "meta_combined",
     };
 
@@ -133,14 +127,9 @@ function parseJsonFields(nestedJsonPaths, results) {
  * if the "count" keyword was passed, the total result count will instead be returned.
  */
 function applySelect(qVars, fields) {
-  if (fields == "count") {
-    qVars.count.start = "SELECT COUNT (*) AS resultcount FROM ( ";
-    qVars.count.end = ") ";
-  } else {
-    fields.forEach((e) => {
-      selectProperty(qVars, e);
-    });
-  }
+  fields.forEach((e) => {
+    selectProperty(qVars, e);
+  });
 }
 
 function filterOnRegex(qVars, regexes) {
