@@ -51,3 +51,5 @@ functions:
                 tags: false
                 themes: false
                 id: false
+                minRN: false
+                maxRN: false

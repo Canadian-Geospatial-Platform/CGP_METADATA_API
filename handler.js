@@ -15,6 +15,10 @@ export async function simpleSearch(event) {
   try {
     // query variables
     let qVars = {
+      rn: {
+        start: "SELECT * FROM (SELECT row_number() over() AS rn, * FROM ( ",
+        end: ")) ",
+      },
       select:
         "SELECT CAST(json_extract(\"cgp_metadata_search_dev\".properties, '$.id') AS VARCHAR) AS id ",
       from: 'FROM "cgp_metadata_search_dev" ',
@@ -23,6 +27,8 @@ export async function simpleSearch(event) {
       groupBy:
         "GROUP BY json_extract(\"cgp_metadata_search_dev\".properties, '$.id'), geometry, properties ",
       having: "",
+      orderBy:
+        "ORDER BY CAST(json_extract(\"cgp_metadata_search_dev\".properties, '$.id') AS VARCHAR) ASC ",
       joinFlags: { l2_tags: false, l2_metadata: false },
       nestedJsonPaths: [],
     };
@@ -38,19 +44,30 @@ export async function simpleSearch(event) {
         filterOnTags(qVars, JSON.parse(event.queryStringParameters.tags));
       if (event.queryStringParameters.themes)
         filterOnThemes(qVars, JSON.parse(event.queryStringParameters.themes));
+      if (
+        event.queryStringParameters.minRN &&
+        event.queryStringParameters.maxRN
+      )
+        filterOnRowNumber(
+          qVars,
+          event.queryStringParameters.minRN,
+          event.queryStringParameters.maxRN
+        );
     }
     applyJoinFlags(qVars);
 
     var myQuery = "";
     myQuery = {
       sql:
+        qVars.rn.start +
         qVars.select +
         qVars.from +
         qVars.join +
         qVars.where +
         qVars.groupBy +
         qVars.having +
-        " LIMIT 10",
+        qVars.orderBy +
+        qVars.rn.end,
       db: "meta_combined",
     };
 
@@ -75,6 +92,16 @@ export async function simpleSearch(event) {
       body: JSON.stringify(myQuery) || "Could not fetch results",
     };
   }
+}
+
+/**
+ * @input qVars the shared data used to construct the query
+ * @input min minimum row number of the results to be returned
+ * @input max maximum row number of the results to be returned
+ * @post the results returned will have a row number between min and max
+ */
+function filterOnRowNumber(qVars, min, max) {
+  qVars.rn.end += "WHERE rn BETWEEN " + min + " AND " + max + " ";
 }
 
 /**
