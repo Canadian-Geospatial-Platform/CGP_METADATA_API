@@ -35,8 +35,8 @@ package:
   individually: true
 
 functions:
-  simpleSearch:
-    handler: handler.simpleSearch
+  search:
+    handler: handler.search
     events:
       - http:
           path: geo
