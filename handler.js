@@ -19,6 +19,10 @@ export async function search(event) {
         start: "",
         end: "",
       },
+      theme: {
+        start: "",
+        end: "",
+      },
       select:
         "SELECT CAST(json_extract(\"cgp_metadata_search_dev\".properties, '$.id') AS VARCHAR) AS id, COUNT(*) OVER() AS totalresultcount ",
       from: 'FROM "cgp_metadata_search_dev" ',
@@ -29,7 +33,7 @@ export async function search(event) {
       having: "",
       orderBy:
         "ORDER BY CAST(json_extract(\"cgp_metadata_search_dev\".properties, '$.id') AS VARCHAR) ASC ",
-      joinFlags: { l2_tags: false, l2_metadata: false },
+      joinFlags: { l2_tags: false, l2_resources: false },
       nestedJsonPaths: [],
     };
 
@@ -54,12 +58,14 @@ export async function search(event) {
           event.queryStringParameters.maxRN
         );
     }
+    selectTheme(qVars);
     applyJoinFlags(qVars);
 
     var myQuery = "";
     myQuery = {
       sql:
         qVars.rowNumber.start +
+        qVars.theme.start +
         qVars.select +
         qVars.from +
         qVars.join +
@@ -67,6 +73,7 @@ export async function search(event) {
         qVars.groupBy +
         qVars.having +
         qVars.orderBy +
+        qVars.theme.end +
         qVars.rowNumber.end,
       db: "meta_combined",
     };
@@ -74,7 +81,7 @@ export async function search(event) {
     let results = await athenaExpress.query(myQuery);
 
     parseJsonFields(qVars.nestedJsonPaths, results);
-
+    results.query = myQuery;
     return {
       statusCode: 200,
       headers: {
@@ -138,15 +145,18 @@ function filterOnRegex(qVars, regexes) {
   });
 }
 
+/**
+ * @pre selectTheme must be called to add the required theme field. selectTheme
+ * can be done before or after calling this function
+ * @input qVars the shared data used to construct the query
+ * @input themes ARRAY[string] to match for filtering
+ * @post The result will be filtered on the theme field based on mappings of
+ * "l2_metadata".theme and topiccategory. (See: selectTheme function).
+ */
 function filterOnThemes(qVars, themes) {
-  themes.forEach((e) => {
-    let content =
-      'regexp_like(CAST(json_extract("properties", \'$.topiccategory' +
-      "') AS VARCHAR), '(?i).*" +
-      e +
-      ".*')";
-    qVars.where = queryString(qVars.where, content, "WHERE", "AND");
-  });
+  qVars.theme.start = "select * from (";
+  qVars.theme.end =
+    ") WHERE regexp_like(combinedtheme, '(?i)" + themes.join("|") + "')";
 }
 
 /**
@@ -243,8 +253,8 @@ function applyJoinFlags(qVars) {
   if (qVars.joinFlags.l2_tags) {
     joinTags(qVars);
   }
-  if (qVars.joinFlags.l2_tags) {
-    joinL2Metadata(qVars);
+  if (qVars.joinFlags.l2_resources) {
+    joinL2Resources(qVars);
   }
 }
 
@@ -268,12 +278,12 @@ function joinTags(qVars) {
   qVars.join = queryString(qVars.join, joinTags, "LEFT JOIN", "LEFT JOIN");
 }
 
-function joinL2Metadata(qVars) {
-  let joinL2Metadata =
+function joinL2Resources(qVars) {
+  let joinL2Resources =
     '"l2_resources" ON CAST(json_extract("cgp_metadata_search_dev".properties, \'$.id\') AS VARCHAR) = "l2_resources".id ';
   qVars.join = queryString(
     qVars.join,
-    joinL2Metadata,
+    joinL2Resources,
     "LEFT JOIN",
     "LEFT JOIN"
   );
@@ -294,6 +304,7 @@ function joinL2Metadata(qVars) {
 function selectProperty(qVars, path) {
   let selectString = "";
   let splitPath = path.split(".");
+
   if (["properties"].includes(splitPath[0])) {
     qVars.nestedJsonPaths.push(path);
     if (splitPath.length > 1) {
@@ -309,7 +320,7 @@ function selectProperty(qVars, path) {
       selectString = path;
     }
     qVars.select = queryString(qVars.select, selectString, "SELECT", ",");
-  } else if (["tags"].includes(splitPath[0])) {
+  } else if (splitPath[0] == "tags") {
     qVars.nestedJsonPaths.push(path);
     selectOnTags(qVars);
   } else if (
@@ -319,6 +330,80 @@ function selectProperty(qVars, path) {
   ) {
     selectFromSql(qVars, "l2_resources", splitPath[0]);
   }
+}
+
+/**
+ * This function adds a custom field to the resulting dataset. It's reasoning is the following:
+ *
+ * 1. If "l2_resources".theme is not null, return the content of
+ * "l2_resources".theme.
+ * 2. If "l2_resources".theme is null, take the content of
+ * properties.topiccategory and apply the following mapping:
+ *
+ * +----------------------------------------------------------+
+ * | topiccategory(ISO)                 | combinedtheme(CGP)  |
+ * +----------------------------------+-----------------------+
+ * | Boundaries                         | Administration      |
+ * | Planning Cadastre                  | Administration      |
+ * | Economy                            | Economy             |
+ * | Farming                            | Economy             |
+ * | Biota                              | Environment         |
+ * | climate & environment              | Environment         |
+ * | Climatology Meteorology Atmosphere | Environment         |
+ * | elevation                          | Environment         |
+ * | environment                        | Environment         |
+ * | Inland Waters                      | Environment         |
+ * | oceans                             | Environment         |
+ * | Imagery BaseMaps Earth Cover       | Imagery             |
+ * | Structure                          | Infrastructure      |
+ * | Transportation                     | Infrastructure      |
+ * | Utilities Communication            | Infrastructure      |
+ * | Geoscientific Information          | Science             |
+ * | Location                           | Science             |
+ * | Health                             | Society             |
+ * | Intelligence Military              | Society             |
+ * | Society                            | Society             |
+ * +----------------------------------------------------------+
+ * | The two following values can only exist in theme from    |
+ * | l2_metadata                                              |
+ * +----------------------------------------------------------+
+ * | -                                  | Legal               |
+ * | -                                  | Emergency           |
+ * +----------------------------------------------------------+
+ *
+ * @input qVars the shared data used to construct the query
+ * @post a theme field will be added to the query.
+ *
+ * */
+function selectTheme(qVars) {
+  qVars.joinFlags.l2_resources = true;
+  let selectString =
+    "CASE " +
+    'WHEN "l2_resources".theme IS NOT NULL THEN ' +
+    '"l2_resources".theme ' +
+    "WHEN regexp_like(CAST(json_extract(\"properties\", '$.topiccategory') AS VARCHAR), '(?i)(Boundaries|PlanningCadastre)') THEN " +
+    "'Administration'" +
+    "WHEN regexp_like(CAST(json_extract(\"properties\", '$.topiccategory') AS VARCHAR), '(?i)(Economy|Farming)') THEN " +
+    "'Economy'" +
+    "WHEN regexp_like(CAST(json_extract(\"properties\", '$.topiccategory') AS VARCHAR), '(?i)(Biota|Climate & Environment|ClimatologyMeteorologyAtmosphere|Elevation|Environment|InlandWaters|Oceans)') THEN " +
+    "'Environment'" +
+    "WHEN regexp_like(CAST(json_extract(\"properties\", '$.topiccategory') AS VARCHAR), '(?i)(ImageryBaseMapsEarthCover)') THEN " +
+    "'Imagery'" +
+    "WHEN regexp_like(CAST(json_extract(\"properties\", '$.topiccategory') AS VARCHAR), '(?i)(Structure|Transportation|UtilitiesCommunication)') THEN " +
+    "'Infrastructure'" +
+    "WHEN regexp_like(CAST(json_extract(\"properties\", '$.topiccategory') AS VARCHAR), '(?i)(GeoscientificInformation|Location)') THEN " +
+    "'Science'" +
+    "WHEN regexp_like(CAST(json_extract(\"properties\", '$.topiccategory') AS VARCHAR), '(?i)(Health|IntelligenceMilitary|Society)') THEN " +
+    "'Society'" +
+    "END as combinedtheme";
+
+  qVars.select = queryString(qVars.select, selectString, "SELECT", ",");
+  qVars.groupBy = queryString(
+    qVars.groupBy,
+    '"l2_resources".theme',
+    "GROUP BY",
+    ","
+  );
 }
 
 /**
