@@ -15,24 +15,31 @@ export async function search(event) {
   try {
     // query variables
     let qVars = {
-      rowNumber: {
-        start: "",
-        end: "",
+      l3: {
+        rowNumber: {
+          start: "",
+          end: "",
+        },
       },
-      theme: {
-        start: "",
-        end: "",
+      l2: {
+        where: "",
+        select: {
+          start: "select *, COUNT(*) OVER() AS totalresultcount from (",
+          end: ") ",
+        },
       },
-      select:
-        "SELECT CAST(json_extract(\"cgp_metadata_search_dev\".properties, '$.id') AS VARCHAR) AS id, COUNT(*) OVER() AS totalresultcount ",
-      from: 'FROM "cgp_metadata_search_dev" ',
-      join: "",
-      where: "",
-      groupBy:
-        "GROUP BY json_extract(\"cgp_metadata_search_dev\".properties, '$.id'), geometry, properties ",
-      having: "",
-      orderBy:
-        "ORDER BY CAST(json_extract(\"cgp_metadata_search_dev\".properties, '$.id') AS VARCHAR) ASC ",
+      l1: {
+        select:
+          "SELECT CAST(json_extract(\"cgp_metadata_search_dev\".properties, '$.id') AS VARCHAR) AS id ",
+        from: 'FROM "cgp_metadata_search_dev" ',
+        join: "",
+        where: "",
+        groupBy:
+          "GROUP BY json_extract(\"cgp_metadata_search_dev\".properties, '$.id'), geometry, properties ",
+        having: "",
+        orderBy:
+          "ORDER BY CAST(json_extract(\"cgp_metadata_search_dev\".properties, '$.id') AS VARCHAR) ASC ",
+      },
       joinFlags: { l2_tags: false, l2_resources: false },
       nestedJsonPaths: [],
     };
@@ -64,17 +71,18 @@ export async function search(event) {
     var myQuery = "";
     myQuery = {
       sql:
-        qVars.rowNumber.start +
-        qVars.theme.start +
-        qVars.select +
-        qVars.from +
-        qVars.join +
-        qVars.where +
-        qVars.groupBy +
-        qVars.having +
-        qVars.orderBy +
-        qVars.theme.end +
-        qVars.rowNumber.end,
+        qVars.l3.rowNumber.start +
+        qVars.l2.select.start +
+        qVars.l1.select +
+        qVars.l1.from +
+        qVars.l1.join +
+        qVars.l1.where +
+        qVars.l1.groupBy +
+        qVars.l1.having +
+        qVars.l1.orderBy +
+        qVars.l2.select.end +
+        qVars.l2.where +
+        qVars.l3.rowNumber.end,
       db: "meta_combined",
     };
 
@@ -108,9 +116,9 @@ export async function search(event) {
  * @post the results returned will have a row number between min and max
  */
 function filterOnRowNumber(qVars, min, max) {
-  qVars.rowNumber.start =
+  qVars.l3.rowNumber.start =
     "SELECT * FROM (SELECT row_number() over() AS rowNumber, * FROM ( ";
-  qVars.rowNumber.end =
+  qVars.l3.rowNumber.end =
     ")) WHERE rowNumber BETWEEN " + min + " AND " + max + " ";
 }
 
@@ -154,9 +162,8 @@ function filterOnRegex(qVars, regexes) {
  * "l2_metadata".theme and topiccategory. (See: selectTheme function).
  */
 function filterOnThemes(qVars, themes) {
-  qVars.theme.start = "select * from (";
-  qVars.theme.end =
-    ") WHERE regexp_like(combinedtheme, '(?i)" + themes.join("|") + "')";
+  let content = "regexp_like(combinedtheme, '(?i)" + themes.join("|") + "')";
+  qVars.l2.where = queryString(qVars.l2.where, content, "WHERE", "AND");
 }
 
 /**
@@ -185,11 +192,11 @@ function applySimpleRegexToJsonField(qVars, regex) {
         "') AS VARCHAR), '" +
         regex +
         "')";
-      qVars.where = queryString(qVars.where, content, "WHERE (", keyword);
+      qVars.l1.where = queryString(qVars.l1.where, content, "WHERE (", keyword);
     }
     keyword = "OR";
   });
-  qVars.where += ") ";
+  qVars.l1.where += ") ";
 }
 
 /**
@@ -208,7 +215,7 @@ function filterOnId(qVars, id) {
   });
   content +=
     "], CAST(json_extract(\"cgp_metadata_search_dev\".properties, '$.id') AS VARCHAR))";
-  qVars.where = queryString(qVars.where, content, "WHERE", "AND");
+  qVars.l1.where = queryString(qVars.l1.where, content, "WHERE", "AND");
 }
 
 /**
@@ -235,13 +242,13 @@ function filterOnTags(qVars, tags = []) {
   qVars.joinFlags.l2_tags = true;
   tags.forEach((e) => {
     let content = 'contains(array_agg("l2_tags".title), \'' + e + "')";
-    qVars.having = queryString(qVars.having, content, "HAVING", "AND");
+    qVars.l1.having = queryString(qVars.l1.having, content, "HAVING", "AND");
   });
 }
 
 function selectOnTags(qVars) {
   qVars.joinFlags.l2_tags = true;
-  qVars.select += ', CAST(array_agg("l2_tags".title) AS JSON) AS tags ';
+  qVars.l1.select += ', CAST(array_agg("l2_tags".title) AS JSON) AS tags ';
 }
 
 /**
@@ -269,20 +276,25 @@ function joinTags(qVars) {
     '"l2_relations_container_tag_resource" ON CAST(json_extract("cgp_metadata_search_dev".properties, \'$.id\') AS VARCHAR) = "l2_relations_container_tag_resource".resourceid ';
   let joinTags = '"l2_tags" ON tagid = "l2_tags".id';
 
-  qVars.join = queryString(
-    qVars.join,
+  qVars.l1.join = queryString(
+    qVars.l1.join,
     joinTagResourceRelations,
     "LEFT JOIN",
     "LEFT JOIN"
   );
-  qVars.join = queryString(qVars.join, joinTags, "LEFT JOIN", "LEFT JOIN");
+  qVars.l1.join = queryString(
+    qVars.l1.join,
+    joinTags,
+    "LEFT JOIN",
+    "LEFT JOIN"
+  );
 }
 
 function joinL2Resources(qVars) {
   let joinL2Resources =
     '"l2_resources" ON CAST(json_extract("cgp_metadata_search_dev".properties, \'$.id\') AS VARCHAR) = "l2_resources".id ';
-  qVars.join = queryString(
-    qVars.join,
+  qVars.l1.join = queryString(
+    qVars.l1.join,
     joinL2Resources,
     "LEFT JOIN",
     "LEFT JOIN"
@@ -319,7 +331,7 @@ function selectProperty(qVars, path) {
     } else {
       selectString = path;
     }
-    qVars.select = queryString(qVars.select, selectString, "SELECT", ",");
+    qVars.l1.select = queryString(qVars.l1.select, selectString, "SELECT", ",");
   } else if (splitPath[0] == "tags") {
     qVars.nestedJsonPaths.push(path);
     selectOnTags(qVars);
@@ -397,9 +409,9 @@ function selectTheme(qVars) {
     "'Society'" +
     "END as combinedtheme";
 
-  qVars.select = queryString(qVars.select, selectString, "SELECT", ",");
-  qVars.groupBy = queryString(
-    qVars.groupBy,
+  qVars.l1.select = queryString(qVars.l1.select, selectString, "SELECT", ",");
+  qVars.l1.groupBy = queryString(
+    qVars.l1.groupBy,
     '"l2_resources".theme',
     "GROUP BY",
     ","
@@ -420,14 +432,14 @@ function selectTheme(qVars) {
 function selectFromSql(qVars, tableName, fieldName) {
   let selectAndGroupByString = '"' + tableName + '".' + fieldName;
   qVars.joinFlags[tableName] = true;
-  qVars.select = queryString(
-    qVars.select,
+  qVars.l1.select = queryString(
+    qVars.l1.select,
     selectAndGroupByString,
     "SELECT",
     ","
   );
-  qVars.groupBy = queryString(
-    qVars.groupBy,
+  qVars.l1.groupBy = queryString(
+    qVars.l1.groupBy,
     selectAndGroupByString,
     "GROUP BY",
     ","
