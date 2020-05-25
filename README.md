@@ -49,7 +49,7 @@ object returned by the database.
 ### Sample Query
 
 - Query type: GET
-- Sample url: https://tf7rzxdu96.execute-api.ca-central-1.amazonaws.com/dev/geo?select=%5B%22properties%22%2C%22tags%22%5D&id=%5B%2211436a7f-87fc-afd7-a531-58dce5791d32%22%5D&regex=%5B%5D&themes=%5B%5D&tags=%5B%5D
+- Sample url: https://zq7vthl3ye.execute-api.ca-central-1.amazonaws.com/sta/geo?select=%5B%22properties%22%2C%22tags%22%5D&id=%5B%5D&regex=%5B%22water%22%5D&themes=%5B%22Economy%22%5D&tags=%5B%22air%22%5D&minRN=1&maxRN=10
 
 ### Sample Result
 
@@ -58,6 +58,9 @@ object returned by the database.
     "Items": [
         {
             "id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+            "rowNumber": "1",
+            "combineTheme": "Economy",
+            "totalresultcounts": "1",
             "properties": {
                 "title": {
                     "en": "xxx",
