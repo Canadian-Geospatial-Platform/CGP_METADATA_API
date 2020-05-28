@@ -41,7 +41,8 @@ This api is vaguely inspired by graphql rather than the usual RESTful API style.
 This means that the consumer is expected to describe the data he desires to
 receive in the body of his query to slim down the amount of data transferred to
 him. He is also expected to send in filters to apply to the data in the backend
-using [regex](https://en.wikipedia.org/wiki/Regular_expression) pattern matching.
+using stringified arrays of keywords or 
+[regex](https://en.wikipedia.org/wiki/Regular_expression) for pattern matching.
 
 Path is described using the dot notation path to the field in the javascript
 object returned by the database.
