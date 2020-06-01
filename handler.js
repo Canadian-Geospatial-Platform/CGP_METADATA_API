@@ -238,6 +238,12 @@ function queryString(baseString, content, keyword, separator) {
   return ret;
 }
 
+/**
+ * @input qVars the shared data used to construct the query
+ * @input tags an array of strings to match with associated tags
+ *
+ * @post results will be filtered based on their tags
+ */
 function filterOnTags(qVars, tags = []) {
   qVars.joinFlags.l2_tags = true;
   tags.forEach((e) => {
@@ -246,7 +252,12 @@ function filterOnTags(qVars, tags = []) {
   });
 }
 
-function selectOnTags(qVars) {
+/**
+ * @input qVars the shared data used to construct the query
+ *
+ * @post a tag array will be added to the query results
+ */
+function selectTags(qVars) {
   qVars.joinFlags.l2_tags = true;
   qVars.l1.select += ', CAST(array_agg("l2_tags".title) AS JSON) AS tags ';
 }
@@ -290,6 +301,12 @@ function joinTags(qVars) {
   );
 }
 
+/**
+ * @input qVars the shared data used to construct the query
+ *
+ * @post the fields from the level 2 resources will be associated to level 1
+ * resources in the query.
+ */
 function joinL2Resources(qVars) {
   let joinL2Resources =
     '"l2_resources" ON CAST(json_extract("cgp_metadata_search_dev".properties, \'$.id\') AS VARCHAR) = "l2_resources".id ';
@@ -334,7 +351,7 @@ function selectProperty(qVars, path) {
     qVars.l1.select = queryString(qVars.l1.select, selectString, "SELECT", ",");
   } else if (splitPath[0] == "tags") {
     qVars.nestedJsonPaths.push(path);
-    selectOnTags(qVars);
+    selectTags(qVars);
   } else if (
     ["popularityindex", "title", "description", "resourceurl"].includes(
       splitPath[0]
@@ -345,7 +362,8 @@ function selectProperty(qVars, path) {
 }
 
 /**
- * This function adds a custom field to the resulting dataset. It's reasoning is the following:
+ * This function adds a custom field to the resulting dataset. It's reasoning
+ * is the following:
  *
  * 1. If "l2_resources".theme is not null, return the content of
  * "l2_resources".theme.
