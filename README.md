@@ -111,9 +111,9 @@ object returned by the database.
 ### Updating the level 2 metadata
 
 Since this system uses _Amazon Athena_ to query data. The data to be queried
-must be placed in a bucket. To this end, we use aws glue to infer the schema of
-our level 2 data and, then, use an aws glue job to transfer the data to an
-amazon s3 bucket.
+must be placed in a bucket. To this end, we use an aws glue job to transfer the 
+data to an amazon s3 bucket and then use aws glue to infer the schema of
+our level 2 data from the s3 bucket.
 
 From the AWS console under services/AWS glue:
 
